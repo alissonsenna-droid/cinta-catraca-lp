@@ -49,6 +49,26 @@
     letter-spacing:.03em;background:var(--brand);color:var(--primary-foreground);
     padding:.15rem .5rem;border-radius:9999px;
   }
+  .order-bump{
+    display:flex;align-items:center;gap:.85rem;position:relative;
+    border:2px dashed var(--brand);border-radius:1rem;padding:.9rem;
+    cursor:pointer;background:color-mix(in oklab, var(--brand) 6%, var(--card));
+    transition:background .15s,border-style .15s;
+  }
+  .order-bump:has(input:checked){background:color-mix(in oklab, var(--brand) 16%, var(--card));border-style:solid}
+  .order-bump input{position:absolute;opacity:0;pointer-events:none}
+  .order-bump-img{height:3.75rem;width:3.75rem;border-radius:.65rem;border:1px solid var(--border);object-fit:cover;background:#fff;flex-shrink:0}
+  .order-bump-text{min-width:0;flex:1}
+  .order-bump-tag{font-size:.6875rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--brand-deep)}
+  .order-bump-title{font-size:.9rem;font-weight:700;color:var(--navy);margin-top:.15rem}
+  .order-bump-desc{font-size:.75rem;color:var(--muted-foreground);margin-top:.15rem}
+  .order-bump-check{
+    width:1.4rem;height:1.4rem;border-radius:.4rem;border:2px solid var(--border);
+    flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--card);
+  }
+  .order-bump-check::after{content:'\2713';color:var(--card);font-size:.85rem;font-weight:900;opacity:0;transition:opacity .15s}
+  .order-bump:has(input:checked) .order-bump-check{background:var(--brand);border-color:var(--brand)}
+  .order-bump:has(input:checked) .order-bump-check::after{opacity:1}
   #placeholder-panel{display:none}
   #placeholder-panel.show{display:block}
   @media (max-width:480px){.checkout-row3{grid-template-columns:1.6fr 1fr 1fr}}
@@ -170,6 +190,20 @@
         </div>
       </section>
 
+      <!-- Order bump -->
+      <section class="mt-8">
+        <label class="order-bump" for="bump-extra">
+          <input type="checkbox" id="bump-extra" name="bump_extra">
+          <img src="images/01.png" alt="Cinta Catraca Smart® extra" class="order-bump-img">
+          <div class="order-bump-text">
+            <p class="order-bump-tag">Oferta exclusiva desta compra</p>
+            <p class="order-bump-title">Adicione a nossa última unidade por apenas R$99,90</p>
+            <p class="order-bump-desc">e tenha mais uma Cinta Catraca extra — de <s>R$147</s> por <strong>R$99,90</strong>.</p>
+          </div>
+          <span class="order-bump-check" aria-hidden="true"></span>
+        </label>
+      </section>
+
       <!-- Pagamento -->
       <section class="mt-8">
         <div class="checkout-section-title">
@@ -207,6 +241,10 @@
         <div class="flex items-center justify-between text-sm text-muted-foreground">
           <span>Subtotal</span>
           <span id="total-subtotal">R$257</span>
+        </div>
+        <div id="total-bump-row" class="mt-1 flex items-center justify-between text-sm" style="color:var(--brand-deep);display:none">
+          <span>Cinta extra (oferta)</span>
+          <span id="total-bump">+ R$99,90</span>
         </div>
         <div id="total-discount-row" class="mt-1 flex items-center justify-between text-sm" style="color:var(--brand-deep)">
           <span>Desconto Pix (5%)</span>
@@ -276,10 +314,13 @@
   // O kit é escolhido na landing page (cada botão "COMPRAR" leva pra
   // checkout.html?kit=1|2|3) — aqui só lemos a URL, sem seletor visível.
   var currentKit = '2';
+  var BUMP_PRICE = 99.90;
   var payInputs = document.querySelectorAll('input[name="pagamento"]');
+  var bumpInput = document.getElementById('bump-extra');
   var kitDescEl = document.getElementById('kit-desc');
   var kitPriceEl = document.getElementById('kit-price');
   var subtotalEl = document.getElementById('total-subtotal');
+  var bumpRowEl = document.getElementById('total-bump-row');
   var discountRowEl = document.getElementById('total-discount-row');
   var discountEl = document.getElementById('total-discount');
   var finalEl = document.getElementById('total-final');
@@ -302,14 +343,22 @@
     kitPriceEl.textContent = fmt(kit.price);
     subtotalEl.textContent = fmt(kit.price);
 
+    var hasBump = bumpInput.checked;
+    bumpRowEl.style.display = hasBump ? 'flex' : 'none';
+
+    // O desconto do Pix vale só sobre o kit — o item extra já sai com
+    // preço especial de oferta única, então não acumula desconto.
     var isPix = selectedPayment() === 'pix';
     var discount = isPix ? kit.price * 0.05 : 0;
     discountRowEl.style.display = isPix ? 'flex' : 'none';
     discountEl.textContent = '- ' + fmt(discount);
-    finalEl.textContent = fmt(kit.price - discount);
+
+    var total = kit.price - discount + (hasBump ? BUMP_PRICE : 0);
+    finalEl.textContent = fmt(total);
   }
 
   payInputs.forEach(function (el) { el.addEventListener('change', recalc); });
+  bumpInput.addEventListener('change', recalc);
 
   // Kit definido pela URL, ex: checkout.html?kit=2 (link vindo da landing page)
   var urlKit = new URLSearchParams(location.search).get('kit');
@@ -374,6 +423,7 @@
     // Dados coletados (para depuração / futura integração):
     console.log('[checkout] pedido (placeholder, sem integração real ainda):', {
       kit: selectedKit(),
+      order_bump_extra: bumpInput.checked,
       pagamento: selectedPayment(),
       nome: document.getElementById('f-nome').value,
       email: document.getElementById('f-email').value,
