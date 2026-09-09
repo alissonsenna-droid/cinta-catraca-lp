@@ -49,11 +49,6 @@
     letter-spacing:.03em;background:var(--brand);color:var(--primary-foreground);
     padding:.15rem .5rem;border-radius:9999px;
   }
-  .kit-pill{border:1.5px solid var(--border);border-radius:.85rem;padding:.7rem .9rem;cursor:pointer;text-align:center;transition:border-color .15s,background .15s}
-  .kit-pill:has(input:checked){border-color:var(--brand);background:color-mix(in oklab, var(--brand) 8%, transparent)}
-  .kit-pill input{position:absolute;opacity:0;pointer-events:none}
-  .kit-pill .kit-pill-label{font-size:.75rem;font-weight:700;color:var(--navy)}
-  .kit-pill .kit-pill-price{font-family:Archivo,sans-serif;font-weight:800;color:var(--brand-deep);font-size:1rem;margin-top:.15rem}
   #placeholder-panel{display:none}
   #placeholder-panel.show{display:block}
   @media (max-width:480px){.checkout-row3{grid-template-columns:1.6fr 1fr 1fr}}
@@ -77,8 +72,11 @@
     <h1 class="font-display text-navy text-2xl font-extrabold">Finalizar pedido</h1>
     <p class="mt-1 text-sm text-muted-foreground">Confira seu kit e preencha seus dados para receber a Cinta Catraca Smart®.</p>
 
-    <!-- Resumo do pedido -->
-    <section class="mt-6 rounded-2xl border bg-card p-5 border-border">
+    <!-- Banner do produto -->
+    <img src="images/banner-cinta-smart.png" alt="Cinta Catraca Smart® — fixação rápida e segura para sua carga" class="mt-6 w-full rounded-2xl border border-border">
+
+    <!-- Resumo do pedido (kit já escolhido na landing page, via ?kit=) -->
+    <section class="mt-4 rounded-2xl border bg-card p-5 border-border">
       <div class="flex items-center gap-4">
         <img src="images/01.png" alt="Cinta Catraca Smart®" class="rounded-xl border border-border object-cover bg-white" style="height:5rem;width:5rem">
         <div class="min-w-0 flex-1">
@@ -86,24 +84,6 @@
           <p id="kit-desc" class="text-sm text-muted-foreground">1 unidade — 3,6m x 25mm</p>
         </div>
         <p id="kit-price" class="font-display text-brand-deep text-2xl font-extrabold shrink-0">R$147</p>
-      </div>
-
-      <div class="mt-4 grid grid-cols-3 gap-2.5" role="radiogroup" aria-label="Escolha o kit">
-        <label class="kit-pill">
-          <input type="radio" name="kit" value="1" data-price="147" data-desc="1 unidade — 3,6m x 25mm">
-          <p class="kit-pill-label">1 unidade</p>
-          <p class="kit-pill-price">R$147</p>
-        </label>
-        <label class="kit-pill">
-          <input type="radio" name="kit" value="2" data-price="257" data-desc="2 unidades — 3,6m x 25mm cada" checked>
-          <p class="kit-pill-label">2 unidades</p>
-          <p class="kit-pill-price">R$257</p>
-        </label>
-        <label class="kit-pill">
-          <input type="radio" name="kit" value="3" data-price="317" data-desc="3 unidades — 3,6m x 25mm cada">
-          <p class="kit-pill-label">3 unidades</p>
-          <p class="kit-pill-price">R$317</p>
-        </label>
       </div>
     </section>
 
@@ -293,7 +273,9 @@
     '3': { price: 317, desc: '3 unidades — 3,6m x 25mm cada' }
   };
 
-  var kitInputs = document.querySelectorAll('input[name="kit"]');
+  // O kit é escolhido na landing page (cada botão "COMPRAR" leva pra
+  // checkout.html?kit=1|2|3) — aqui só lemos a URL, sem seletor visível.
+  var currentKit = '2';
   var payInputs = document.querySelectorAll('input[name="pagamento"]');
   var kitDescEl = document.getElementById('kit-desc');
   var kitPriceEl = document.getElementById('kit-price');
@@ -307,8 +289,7 @@
   }
 
   function selectedKit() {
-    var checked = document.querySelector('input[name="kit"]:checked');
-    return checked ? checked.value : '2';
+    return currentKit;
   }
   function selectedPayment() {
     var checked = document.querySelector('input[name="pagamento"]:checked');
@@ -328,15 +309,11 @@
     finalEl.textContent = fmt(kit.price - discount);
   }
 
-  kitInputs.forEach(function (el) { el.addEventListener('change', recalc); });
   payInputs.forEach(function (el) { el.addEventListener('change', recalc); });
 
-  // Pré-seleciona o kit pela URL, ex: checkout.html?kit=2
+  // Kit definido pela URL, ex: checkout.html?kit=2 (link vindo da landing page)
   var urlKit = new URLSearchParams(location.search).get('kit');
-  if (urlKit && KITS[urlKit]) {
-    var toCheck = document.querySelector('input[name="kit"][value="' + urlKit + '"]');
-    if (toCheck) toCheck.checked = true;
-  }
+  if (urlKit && KITS[urlKit]) currentKit = urlKit;
   recalc();
 
   // Máscaras simples (CPF, telefone, CEP) — só formatação visual
