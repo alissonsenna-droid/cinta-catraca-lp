@@ -46,7 +46,7 @@ fbq('track', 'ViewContent');</script><script defer="" src="js/~flock.js" data-pr
     function goTo(i){
       i=Math.max(0,Math.min(slides.length-1,i));
       syncing=true;
-      slides[i].scrollIntoView({behavior:"smooth",inline:"start",block:"nearest"});
+      slides[i].scrollIntoView({behavior:"instant",inline:"start",block:"nearest"});
       setActive(i);
       setTimeout(function(){syncing=false},400);
     }
